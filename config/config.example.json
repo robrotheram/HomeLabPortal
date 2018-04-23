@@ -1,0 +1,20 @@
+{
+  "Host": "127.0.0.1",
+  "Port": 8080,
+  "Username":"admin",
+  "Password":"password",
+
+  //Infrustrucure and link to Avisys IP Power Switch
+  "Infrastructure":{
+    "Name":"Switch",
+    "PDUURL":"http://127.0.0.1"
+  },
+  "Services": [
+    {
+      "Name":"Name Of service",
+      "Url":"url of the serive",
+      "Icon":"relative or remote link to icon e.g ../static/gitlab.svg"
+    }
+
+  ]
+}

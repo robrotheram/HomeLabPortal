@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="../static/favicon.ico">
+
+    <title>Portal</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="../static/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="../static/pricing.css" rel="stylesheet">
+</head>
+
+<body>
+
+<nav class="navbar navbar-expand-sm navbar-dark bg-info ">
+    <div class="container">
+        <a class="navbar-brand" href="#">Service Portal</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExample03" aria-controls="navbarsExample03" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarsExample03">
+            <ul class="navbar-nav mr-auto">
+            </ul>
+            <form class="form-inline my-2 my-md-0">
+                <a class="btn btn-outline-light" style="margin: auto" href="logout">Logout </a>
+            </form>
+        </div>
+    </div>
+</nav>
+
+
+<div class="container" style="padding-top: 50px">
+    <h3> Infrustructure </h3>
+    <div class="row" style="padding-top: 10px">
+        <div class="col-md-12">
+            <div class="card mb-4 box-shadow">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-sm-1" style="text-align: center">
+                            <img height="40px" width="40px" src="../static/server.svg"/>
+                        </div>
+                        <div class="col-sm-8" style="padding-left: 25px; line-height: 20px; text-align: center">
+                            <span style="vertical-align: center; display: inline-block "> <h3>{{.InfrastructureName}}</h3></span>
+                        </div>
+                        <div class="col-sm-3" style="padding-top: 8px; text-align: center">
+
+                            <button id="powerbutton" type="button" class="btn btn-toggle {{.Active}}" data-toggle="button" aria-pressed="true" onclick="switchPower() " autocomplete="off">
+                                <div class="handle"></div>
+                            </button>
+
+                        </div>
+
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <hr/>
+    <h3> Services </h3>
+    <div class="row" style="padding-top: 10px">
+
+        {{range .Services}}
+        <div class="col-md-4">
+            <div class="card mb-4 box-shadow">
+                <a href="{{.Url}}" class="noDecoration">
+                    <div class="card-body">
+                        <table width="100%  ">
+                            <tr>
+                                <td>
+                                    <div class="box">
+                                        <img class="img rounded-circle img-thumbnail" style="padding:10px" height="80px" width="80px" src="{{.Icon}}"/>
+                                        <span class="bet_time indicator status-{{.Status}}"></span>
+                                    </div>
+
+                                </td>
+                                <td>
+                                    <h3>{{.Name}}</h3>
+                            </tr>
+                        </table>
+                    </div>
+                </a>
+            </div>
+        </div>
+        {{end}}
+    </div>
+</div>
+
+</div>
+
+
+<!-- Bootstrap core JavaScript
+================================================== -->
+<!-- Placed at the end of the document so the pages load faster -->
+<script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+<script src="../static/popper.min.js"></script>
+<script src="../static/bootstrap.min.js"></script>
+<script>
+    $(function(){
+        setTimeout(function () {
+            location.reload();
+        },60000) //1 min
+    });
+
+    function switchPower() {
+        if("{{.Active}}" == "active") {
+            $.get("turnOFF", function(data, status){
+                location.reload();
+            });
+        }else{
+            $.get("turnOn", function(data, status){
+                location.reload();
+            });
+        }
+    }
+
+
+</script>
+</body>
+</html>
