@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"github.com/kataras/iris/sessions"
 	"time"
+	"fmt"
 )
 
 type Service struct {
@@ -53,7 +54,14 @@ func getConfig() (Configuration, error) {
 
 	err = decoder.Decode(&config)
 	return config, err;
-	}
+}
+
+func writeConfig() error{
+	configJson, _ := json.MarshalIndent(config, "", "  ")
+	err := ioutil.WriteFile("config/config.json", configJson, 0644)
+	fmt.Printf("%+v", configJson)
+	return err
+}
 
 
 func main() {
@@ -69,11 +77,13 @@ func main() {
 			select {
 			case <- ticker.C:
 				for i  := range  config.Services {
-					attr := &config.Services[i];
-					if checkURL(attr.Url) {
-						attr.Status = "online"
-					} else {
-						attr.Status = "offline"
+					if(i < len(config.Services)) {
+						attr := &config.Services[i];
+						if checkURL(attr.Url) {
+							attr.Status = "online"
+						} else {
+							attr.Status = "offline"
+						}
 					}
 				}
 			case <- quit:
@@ -114,20 +124,18 @@ func main() {
 
 
 	app.Get("/", func(ctx iris.Context) {
-
-		if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-			ctx.Redirect("/login")
-			return
+		session := sess.Start(ctx)
+		auth, _ :=  session.GetBoolean("authenticated")
+		if (config.Infrastructure != Infrastructure{}){
+			ctx.ViewData("InfrastructureName", config.Infrastructure.Name)
+			if(isPowerOn()){
+				ctx.ViewData("Active", "active")
+			}
 		}
 
+		ctx.ViewData("auth", auth)
 		ctx.ViewData("Name", "iris")
-		ctx.ViewData("InfrastructureName", config.Infrastructure.Name)
 		ctx.ViewData("Services", config.Services)
-
-		ctx.ViewData("Active", "")
-		if(isPowerOn()){
-			ctx.ViewData("Active", "active")
-		}
 
 		ctx.Gzip(true)
 		ctx.View("index.html")
@@ -137,7 +145,7 @@ func main() {
 		session := sess.Start(ctx)
 		session.Set("authenticated", false)
 
-		ctx.Redirect("/login")
+		ctx.Redirect("/")
 	})
 
 	app.Get("/login", func(ctx iris.Context) {
@@ -160,6 +168,66 @@ func main() {
 		}
 	})
 
+
+	app.Post("/add-service", func(ctx iris.Context) {
+		if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
+			ctx.Redirect("/login")
+			return
+		}
+		serviceName := ctx.PostValue("service-name")
+		seriviceURl := ctx.PostValue("service-backend")
+		serviceIcon := ctx.PostValue("service-icon")
+		config.Services = append(config.Services, Service{Name:serviceName, Url:seriviceURl, Icon:serviceIcon})
+		writeConfig()
+		ctx.Redirect("/")
+	})
+
+	app.Post("/update-service", func(ctx iris.Context) {
+		if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
+			ctx.Redirect("/login")
+			return
+		}
+
+		serviceOldName := ctx.PostValue("service-oldname")
+		serviceName := ctx.PostValue("service-name")
+		seriviceURl := ctx.PostValue("service-backend")
+		serviceIcon := ctx.PostValue("service-icon")
+
+		for i  := range  config.Services {
+			attr := &config.Services[i];
+			if(attr.Name == serviceOldName){
+				attr.Name = serviceName
+				attr.Url = seriviceURl
+				attr.Icon = serviceIcon
+				break;
+			}
+		}
+		writeConfig()
+		ctx.Redirect("/")
+	})
+
+	app.Post("/delete-service", func(ctx iris.Context) {
+		if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
+			ctx.Redirect("/login")
+			return
+		}
+
+
+		serviceName := ctx.PostValue("serviceName")
+		println("FOUND!!!! " + serviceName)
+
+		for i  := range  config.Services {
+			attr := &config.Services[i];
+			if(attr.Name == serviceName){
+				config.Services = append(config.Services[:i], config.Services[i+1:]...)
+				break;
+			}
+		}
+		writeConfig()
+		ctx.WriteString("{'status':'DELTEED'}")
+	})
+
+
 	app.Run(iris.Addr(config.Host+":"+strconv.Itoa(config.Port)), iris.WithoutServerError(iris.ErrServerClosed))
 }
 
@@ -177,11 +245,8 @@ func checkURL(url string) bool {
 }
 
 func isPowerOn() bool {
-	var username string = "admin"
-	var passwd string = ""
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", config.Infrastructure.PDUURL+"/GetPower.cgi", nil)
-	req.SetBasicAuth(username, passwd)
 	resp, err := client.Do(req)
 	if err != nil{
 		log.Fatal(err)
@@ -190,12 +255,14 @@ func isPowerOn() bool {
 
 	r := regexp.MustCompile(`Power Control = (.+)?;<p>`)
 	res := r.FindStringSubmatch(string(bodyText));
-	split := strings.Split(res[1], ",")
-	for _, v := range split{
-		if v == "P2:1" {
-			return true;
-		}else if v == "P3:1" {
-			return true;
+	if(len(res) >= 2) {
+		split := strings.Split(res[1], ",")
+		for _, v := range split {
+			if v == "P2:1" {
+				return true;
+			} else if v == "P3:1" {
+				return true;
+			}
 		}
 	}
 	return false;
