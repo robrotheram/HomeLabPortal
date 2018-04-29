@@ -109,6 +109,7 @@ type Service struct {
 type Infrastructure struct{
 	Name string
 	PDUURL string
+	Active bool
 }
 type Configuration struct {
 	Host string
@@ -246,7 +247,7 @@ func GetIndex(config *Configuration) iris.Handler {
 		auth, _ := session.GetBoolean("authenticated")
 		if (config.Infrastructure != Infrastructure{}) {
 			ctx.ViewData("InfrastructureName", config.Infrastructure.Name)
-			if(isPowerOn(config)){
+			if(config.Infrastructure.Active){
 				ctx.ViewData("Active", "active")
 			}
 		}
@@ -351,7 +352,9 @@ func powerOn(config *Configuration) iris.Handler {
 
 
 func checkURL(url string) bool {
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout:time.Duration(time.Second),
+	}
 	req, err := http.NewRequest("GET", url, nil)
 	resp, err := client.Do(req)
 	if err != nil{
@@ -396,17 +399,20 @@ func main() {
 	if(config.Traefik){writeTraefik(&config);}
 
 
-	go func() {
+	go func(conf *Configuration) {
 		for {
 			select {
 			case <- ticker.C:
-				for i  := range  config.Services {
-					if(i < len(config.Services)) {
-						attr := &config.Services[i];
+				for i  := range  conf.Services {
+					if(i < len(conf.Services)) {
+						attr := &conf.Services[i];
 						if checkURL(attr.BackendUrl) {
 							attr.Status = "online"
 						} else {
 							attr.Status = "offline"
+						}
+						if (config.Infrastructure != Infrastructure{}) {
+							conf.Infrastructure.Active = isPowerOn(conf)
 						}
 					}
 				}
@@ -415,7 +421,7 @@ func main() {
 				return
 			}
 		}
-	}()
+	}(&config)
 
 
 
