@@ -135,7 +135,6 @@
 
 </div>
 
-
 {{if .auth}}
 <div class="modal fade" id="addService" tabindex="-1" role="dialog" aria-labelledby="addService" aria-hidden="true">
     <div class="modal-dialog" role="document">
@@ -153,10 +152,12 @@
                     <label for="service-name" class="col-form-label">Service Name:</label>
                     <input type="text" class="form-control" id="service-name" name="service-name">
                 </div>
-                <div class="form-group">
-                    <label for="service-backendurl" class="col-form-label">Backend Url:</label>
-                    <input type="text" class="form-control" id="service-backend" name="service-backend">
-                </div>
+                {{if .Traefik}}
+                    <div class="form-group">
+                        <label for="service-backendurl" class="col-form-label">Backend Url:</label>
+                        <input type="text" class="form-control" id="service-backend" name="service-backend">
+                    </div>
+                {{end}}
                 <div class="form-group">
                     <label for="service-frontendurl" class="col-form-label">Frontend Url:</label>
                     <input type="text" class="form-control" id="service-frontend"name="service-frontend">
@@ -205,8 +206,17 @@
             modal.find('#service-backend').val(serviceBackend);
             modal.find('#service-frontend').val(serviceFrontend);
             modal.find('#service-icon').val(serviceIcon);
-            modal.find('form').attr('action', "update-service")
+            modal.find('form').attr('action', "update-service");
             modal.find('#edit').val("Edit Service")
+        }else{
+            modal.find('.modal-title').text('New Service');
+            modal.find('#service-name').val("");
+            modal.find('#service-oldname').val("");
+            modal.find('#service-backend').val("");
+            modal.find('#service-frontend').val("");
+            modal.find('#service-icon').val("");
+            modal.find('form').attr('action', "add-service");
+            modal.find('#edit').val("Add Service")
         }
     });
 

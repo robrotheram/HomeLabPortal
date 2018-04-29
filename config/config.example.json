@@ -3,7 +3,7 @@
   "Port": 8080,
   "Username":"admin",
   "Password":"password",
-  "useTreafik": true,
+  "Traefik": true,
   //Optional Infrustrucure and link to Avisys IP Power Switch
   "Infrastructure":{
     "Name":"Switch",

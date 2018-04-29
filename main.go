@@ -115,7 +115,7 @@ type Configuration struct {
 	Port int
 	Username string
 	Password string
-	useTreafik bool
+	Traefik bool
 	Infrastructure Infrastructure
 	Services [] Service
 
@@ -169,7 +169,7 @@ func writeConfig(config *Configuration) {
 		log.Fatal(err)
 	}
 
-	if(config.useTreafik){writeTraefik(config);}
+	if(config.Traefik){writeTraefik(config);}
 }
 
 
@@ -254,6 +254,7 @@ func GetIndex(config *Configuration) iris.Handler {
 		ctx.ViewData("auth", auth)
 		ctx.ViewData("Name", "iris")
 		ctx.ViewData("Services", config.Services)
+		ctx.ViewData("Traefik", config.Traefik)
 
 		ctx.Gzip(true)
 		ctx.View("index.html")
@@ -392,8 +393,7 @@ func main() {
 		println(err.Error())
 		return;
 	}
-	getRules()
-	if(config.useTreafik){writeTraefik(&config);}
+	if(config.Traefik){writeTraefik(&config);}
 
 
 	go func() {
