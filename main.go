@@ -198,17 +198,18 @@ func writeTraefik(config *Configuration){
 		if(i < len(config.Services)) {
 			attr := &config.Services[i];
 			servers:= make(map[string]Server)
-			servers["server0"] = Server{attr.BackendUrl, 1}
+			servers[attr.Name] = Server{attr.BackendUrl, 1}
 			back:=Backend{Servers:servers}
 			tconfig.Backends[attr.Name] = &back
 
-			routes:=make(map[string]Route)
-
 			for _, host := range config.Hosts{
-				routes[host] = Route{Rule:"Host:"+attr.FrontendUrl+"."+host}
+				routes:=make(map[string]Route)
+				routes[attr.Name] = Route{Rule:"Host:"+attr.FrontendUrl+"."+host}
+				front:=Frontend{Backend:attr.Name, Routes:routes, PassHostHeader:true}
+				name := attr.FrontendUrl+"."+host
+				tconfig.Frontends[name] = &front
 			}
-			front:=Frontend{Backend:attr.Name, Routes:routes, PassHostHeader:true}
-			tconfig.Frontends[attr.Name] = &front
+
 		}
 	}
 
