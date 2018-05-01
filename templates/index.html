@@ -57,7 +57,11 @@
             <div class="card mb-4 box-shadow">
 
                     <div class="card-body">
-                        <a href="http://{{.FrontendUrl}}" class="noDecoration">
+                        {{if $.Traefik}}
+                            <a href="http://{{.FrontendUrl}}.{{$.Hosts}}" class="noDecoration">
+                        {{else}}
+                            <a href="http://{{.FrontendUrl}}" class="noDecoration">
+                        {{end}}
                         <table width="100%  ">
                             <tr>
                                 <td>

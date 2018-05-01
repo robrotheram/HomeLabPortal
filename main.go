@@ -119,13 +119,13 @@ type Configuration struct {
 	Traefik bool
 	Infrastructure Infrastructure
 	Services [] Service
-
+	Hosts []string
 }
 
 var (
 	cookieNameForSessionID 	=	 "mycookiesessionnameid"
 	sess                   	=	 sessions.New(sessions.Config{Cookie: cookieNameForSessionID})
-	ticker 					=	 time.NewTicker(5 * time.Second)
+	ticker 					=	 time.NewTicker(time.Minute)
 	quit 					=	  make(chan struct{})
 	tconfig					=	  TConfiguration{}
 )
@@ -202,10 +202,11 @@ func writeTraefik(config *Configuration){
 			back:=Backend{Servers:servers}
 			tconfig.Backends[attr.Name] = &back
 
-
 			routes:=make(map[string]Route)
-			routes[attr.Name] = Route{Rule:"Host:"+attr.FrontendUrl}
 
+			for _, host := range config.Hosts{
+				routes[host] = Route{Rule:"Host:"+attr.FrontendUrl+"."+host}
+			}
 			front:=Frontend{Backend:attr.Name, Routes:routes, PassHostHeader:true}
 			tconfig.Frontends[attr.Name] = &front
 		}
@@ -247,7 +248,7 @@ func GetIndex(config *Configuration) iris.Handler {
 		auth, _ := session.GetBoolean("authenticated")
 		if (config.Infrastructure != Infrastructure{}) {
 			ctx.ViewData("InfrastructureName", config.Infrastructure.Name)
-			if(config.Infrastructure.Active){
+			if(isPowerOn(config)){
 				ctx.ViewData("Active", "active")
 			}
 		}
@@ -256,6 +257,7 @@ func GetIndex(config *Configuration) iris.Handler {
 		ctx.ViewData("Name", "iris")
 		ctx.ViewData("Services", config.Services)
 		ctx.ViewData("Traefik", config.Traefik)
+		if(config.Traefik){ctx.ViewData("Hosts", config.Hosts[0])}
 
 		ctx.Gzip(true)
 		ctx.View("index.html")
@@ -323,7 +325,7 @@ func powerOFF(config *Configuration) iris.Handler {
 		req.SetBasicAuth(username, passwd)
 		resp, err := client.Do(req)
 		if err != nil{
-			log.Fatal(err)
+			log.Print(err)
 		}
 		_, err = ioutil.ReadAll(resp.Body)
 		ctx.WriteString("{'status':'OFF'}")
@@ -343,7 +345,7 @@ func powerOn(config *Configuration) iris.Handler {
 		req.SetBasicAuth(username, passwd)
 		resp, err := client.Do(req)
 		if err != nil{
-			log.Fatal(err)
+			log.Print(err)
 		}
 		_, err = ioutil.ReadAll(resp.Body)
 		ctx.WriteString("{'status':'ON'}")
@@ -370,7 +372,7 @@ func isPowerOn(config *Configuration) bool {
 	req, err := http.NewRequest("GET", config.Infrastructure.PDUURL+"/GetPower.cgi", nil)
 	resp, err := client.Do(req)
 	if err != nil{
-		log.Fatal(err)
+		log.Print(err)
 	}
 	bodyText, err := ioutil.ReadAll(resp.Body)
 
@@ -410,9 +412,6 @@ func main() {
 							attr.Status = "online"
 						} else {
 							attr.Status = "offline"
-						}
-						if (config.Infrastructure != Infrastructure{}) {
-							conf.Infrastructure.Active = isPowerOn(conf)
 						}
 					}
 				}

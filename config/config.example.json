@@ -9,7 +9,9 @@
     "Name":"Switch",
     "PDUURL":"http://127.0.0.1"
   },
-
+  "Hosts":[
+    "example.com"
+  ],
   "Services": [
     {
       "Name": "",
