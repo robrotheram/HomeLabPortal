@@ -183,15 +183,16 @@ func writeTraefik(config *Configuration){
 
 	server := "http://"+config.Host+":"+strconv.Itoa(config.Port)
 	servers:= make(map[string]Server)
-	servers["server0"] = Server{server, 1}
+	servers["portal"] = Server{server, 1}
 	back:=Backend{Servers:servers}
 	tconfig.Backends["portal"] = &back
 
 
 	routes:=make(map[string]Route)
-	routes["portal"] = Route{Rule:"Host:"+"portal.alpha.local"}
-	front:=Frontend{Backend:"portal", Routes:routes}
+	routes["portal"] = Route{Rule:"Host:"+"portal."+config.Hosts[0]}
+	front:=Frontend{Backend:"portal", Routes:routes, PassHostHeader:true}
 	tconfig.Frontends["portal"] = &front
+
 
 
 	for i  := range  config.Services {
