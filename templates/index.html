@@ -47,18 +47,14 @@
 
 <div class="container" style="padding-top: 50px">
     <h3> Services </h3>
-
-
-
     <div class="row" style="padding-top: 10px">
-
         {{range .Services}}
         <div class="col-md-4">
             <div class="card mb-4 box-shadow">
 
                     <div class="card-body">
                         {{if $.Traefik}}
-                            <a href="http://{{.FrontendUrl}}.{{$.Hosts}}" class="noDecoration">
+                            <a href="http://{{.FrontendUrl}}.{{$.Host}}" class="noDecoration">
                         {{else}}
                             <a href="http://{{.FrontendUrl}}" class="noDecoration">
                         {{end}}

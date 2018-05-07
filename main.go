@@ -187,13 +187,12 @@ func writeTraefik(config *Configuration){
 	back:=Backend{Servers:servers}
 	tconfig.Backends["portal"] = &back
 
-
-	routes:=make(map[string]Route)
-	routes["portal"] = Route{Rule:"Host:"+"portal."+config.Hosts[0]}
-	front:=Frontend{Backend:"portal", Routes:routes, PassHostHeader:true}
-	tconfig.Frontends["portal"] = &front
-
-
+	for _, host := range config.Hosts {
+		routes := make(map[string]Route)
+		routes["portal-"+host] = Route{Rule: "Host:" + "portal." + host}
+		front := Frontend{Backend: "portal", Routes: routes, PassHostHeader: true}
+		tconfig.Frontends["portal-"+host] = &front
+	}
 
 	for i  := range  config.Services {
 		if(i < len(config.Services)) {
@@ -254,7 +253,14 @@ func GetIndex(config *Configuration) iris.Handler {
 				ctx.ViewData("Active", "active")
 			}
 		}
+		hostArr := strings.Split(ctx.Host(), ".")
+		host := config.Hosts[0]
+		if (len(hostArr)==3){
+			host = strings.Join(append(hostArr[:0], hostArr[1:]...), ".")
+		}
 
+
+		ctx.ViewData("Host", host);
 		ctx.ViewData("auth", auth)
 		ctx.ViewData("Name", "iris")
 		ctx.ViewData("Services", config.Services)
