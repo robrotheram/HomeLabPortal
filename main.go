@@ -170,7 +170,11 @@ func writeConfig(config *Configuration) {
 	}
 
 	if config.Traefik {
-		writeTraefik(config)
+		go func() {
+			time.Sleep(1 * time.Second)
+			writeTraefik(config)
+		}()
+
 	}
 }
 
