@@ -5,33 +5,33 @@ import (
 	"github.com/kataras/iris/middleware/logger"
 	"github.com/kataras/iris/middleware/recover"
 
-	"net/http"
-	"log"
 	"io/ioutil"
+	"log"
+	"net/http"
 
-	"os"
+	"bytes"
 	"encoding/json"
-	"strconv"
-	"github.com/kataras/iris/sessions"
-	"time"
 	"fmt"
 	"github.com/BurntSushi/toml"
-	"bytes"
+	"github.com/kataras/iris/sessions"
+	"os"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 )
 
-
 type Frontend struct {
-	EntryPoints          []string              `json:"entryPoints,omitempty"`
-	Backend              string                `json:"backend,omitempty"`
-	Routes               map[string]Route      `json:"routes,omitempty"`
-	PassHostHeader       bool                  `json:"passHostHeader,omitempty"`
-	PassTLSCert          bool                  `json:"passTLSCert,omitempty"`
-	Priority             int                   `json:"priority"`
-	BasicAuth            []string              `json:"basicAuth"`
-	WhitelistSourceRange []string              `json:"whitelistSourceRange,omitempty"`
+	EntryPoints          []string         `json:"entryPoints,omitempty"`
+	Backend              string           `json:"backend,omitempty"`
+	Routes               map[string]Route `json:"routes,omitempty"`
+	PassHostHeader       bool             `json:"passHostHeader,omitempty"`
+	PassTLSCert          bool             `json:"passTLSCert,omitempty"`
+	Priority             int              `json:"priority"`
+	BasicAuth            []string         `json:"basicAuth"`
+	WhitelistSourceRange []string         `json:"whitelistSourceRange,omitempty"`
 }
+
 // Route holds route configuration.
 type Route struct {
 	Rule string `json:"rule,omitempty"`
@@ -46,7 +46,6 @@ type Backend struct {
 	Buffering      *Buffering        `json:"buffering,omitempty"`
 }
 
-
 // LoadBalancer holds load balancing configuration.
 type LoadBalancer struct {
 	Method     string      `json:"method,omitempty"`
@@ -58,6 +57,7 @@ type LoadBalancer struct {
 type Stickiness struct {
 	CookieName string `json:"cookieName,omitempty"`
 }
+
 // MaxConn holds maximum connection configuration
 type MaxConn struct {
 	Amount        int64  `json:"amount,omitempty"`
@@ -85,12 +85,10 @@ type HealthCheck struct {
 	Interval string `json:"interval,omitempty"`
 }
 
-
 type TConfiguration struct {
-	Backends  map[string]*Backend         `json:"backends,omitempty"`
-	Frontends map[string]*Frontend        `json:"frontends,omitempty"`
+	Backends  map[string]*Backend  `json:"backends,omitempty"`
+	Frontends map[string]*Frontend `json:"frontends,omitempty"`
 }
-
 
 // Server holds server configuration.
 type Server struct {
@@ -98,66 +96,67 @@ type Server struct {
 	Weight int    `json:"weight"`
 }
 
-
 type Service struct {
-	Name string
-	BackendUrl string
+	Name        string
+	BackendUrl  string
+	BackendPath string
 	FrontendUrl string
-	Icon string
-	Status string
+	Icon        string
+	Status      string
 }
-type Infrastructure struct{
-	Name string
+type Infrastructure struct {
+	Name   string
 	PDUURL string
 	Active bool
 }
 type Configuration struct {
-	Host string
-	Port int
-	Username string
-	Password string
-	Traefik bool
+	Host           string
+	Port           int
+	Username       string
+	Password       string
+	Traefik        bool
 	Infrastructure Infrastructure
-	Services [] Service
-	Hosts []string
+	Services       []Service
+	Hosts          []string
 }
 
 var (
-	cookieNameForSessionID 	=	 "mycookiesessionnameid"
-	sess                   	=	 sessions.New(sessions.Config{Cookie: cookieNameForSessionID})
-	ticker 					=	 time.NewTicker(time.Minute)
-	quit 					=	  make(chan struct{})
-	tconfig					=	  TConfiguration{}
+	cookieNameForSessionID = "mycookiesessionnameid"
+	sess                   = sessions.New(sessions.Config{Cookie: cookieNameForSessionID})
+	ticker                 = time.NewTicker(time.Minute)
+	quit                   = make(chan struct{})
+	tconfig                = TConfiguration{}
 )
 
-
 func getConfig() (Configuration, error) {
-	filename:= "config/config.json"
+	filename := "config/config.json"
 	file, err := os.Open(filename)
-	config	:=  Configuration{}
-	if err != nil { return  config, err }
+	config := Configuration{}
+	if err != nil {
+		return config, err
+	}
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(&config)
-	return config, err;
+	return config, err
 }
 
-
-func getRules(){
-	filename:= "rules.toml"
+func getRules() {
+	filename := "rules.toml"
 	file, err := os.Open(filename)
-	if err != nil {  }
-	buff:=new(bytes.Buffer)
-	buff.ReadFrom(file);
+	if err != nil {
+	}
+	buff := new(bytes.Buffer)
+	buff.ReadFrom(file)
 	if _, err := toml.Decode(buff.String(), &tconfig); err != nil {
 		// handle error
 	}
-	data, err := json.Marshal(tconfig);
+	data, err := json.Marshal(tconfig)
 	fmt.Printf("%s\n", data)
 }
 
 func writeConfig(config *Configuration) {
-	for i  := range  config.Services {
-		attr := &config.Services[i];
+	for i := range config.Services {
+		attr := &config.Services[i]
 		log.Print(attr.Name)
 	}
 
@@ -166,25 +165,24 @@ func writeConfig(config *Configuration) {
 
 	err := ioutil.WriteFile("config/config.json", configJson, 0644)
 
-	if(err != nil){
+	if err != nil {
 		log.Fatal(err)
 	}
 
-	if(config.Traefik){writeTraefik(config);}
+	if config.Traefik {
+		writeTraefik(config)
+	}
 }
 
-
-
-
-func writeTraefik(config *Configuration){
+func writeTraefik(config *Configuration) {
 
 	tconfig.Backends = make(map[string]*Backend)
 	tconfig.Frontends = make(map[string]*Frontend)
 
-	server := "http://"+config.Host+":"+strconv.Itoa(config.Port)
-	servers:= make(map[string]Server)
+	server := "http://" + config.Host + ":" + strconv.Itoa(config.Port)
+	servers := make(map[string]Server)
 	servers["portal"] = Server{server, 1}
-	back:=Backend{Servers:servers}
+	back := Backend{Servers: servers}
 	tconfig.Backends["portal"] = &back
 
 	for _, host := range config.Hosts {
@@ -194,28 +192,32 @@ func writeTraefik(config *Configuration){
 		tconfig.Frontends["portal-"+host] = &front
 	}
 
-	for i  := range  config.Services {
-		if(i < len(config.Services)) {
-			attr := &config.Services[i];
-			servers:= make(map[string]Server)
+	for i := range config.Services {
+		if i < len(config.Services) {
+			attr := &config.Services[i]
+			servers := make(map[string]Server)
 			servers[attr.Name] = Server{attr.BackendUrl, 1}
-			back:=Backend{Servers:servers}
+			back := Backend{Servers: servers}
 			tconfig.Backends[attr.Name] = &back
 
-			for _, host := range config.Hosts{
-				routes:=make(map[string]Route)
-				routes[attr.Name] = Route{Rule:"Host:"+attr.FrontendUrl+"."+host}
-				front:=Frontend{Backend:attr.Name, Routes:routes, PassHostHeader:true}
-				name := attr.FrontendUrl+"."+host
+			for _, host := range config.Hosts {
+				routes := make(map[string]Route)
+				log.Println("Backgorund: " + attr.BackendPath)
+				if attr.BackendPath != "" {
+					routes[attr.Name] = Route{Rule: "Host:" + attr.FrontendUrl + "." + host + ";AddPrefix:/" + attr.BackendPath}
+				} else {
+					routes[attr.Name] = Route{Rule: "Host:" + attr.FrontendUrl + "." + host}
+				}
+
+				front := Frontend{Backend: attr.Name, Routes: routes, PassHostHeader: true}
+				name := attr.FrontendUrl + "." + host
 				tconfig.Frontends[name] = &front
 			}
 
 		}
 	}
 
-
-
-	data, _ := json.Marshal(tconfig);
+	data, _ := json.Marshal(tconfig)
 	fmt.Printf("%s\n", data)
 
 	buf := new(bytes.Buffer)
@@ -223,7 +225,6 @@ func writeTraefik(config *Configuration){
 		log.Fatal(err)
 	}
 	ioutil.WriteFile("rules.toml", buf.Bytes(), 0644)
-
 
 }
 
@@ -235,9 +236,11 @@ func AddService(config *Configuration) iris.Handler {
 		}
 		serviceName := ctx.PostValue("service-name")
 		seriviceURl := ctx.PostValue("service-backend")
+		serivicePath := ctx.PostValue("service-backendpath")
 		seriviceFrontURl := ctx.PostValue("service-frontend")
 		serviceIcon := ctx.PostValue("service-icon")
-		config.Services = append(config.Services, Service{Name: serviceName, BackendUrl: seriviceURl, FrontendUrl: seriviceFrontURl, Icon: serviceIcon})
+
+		config.Services = append(config.Services, Service{Name: serviceName, BackendUrl: seriviceURl, FrontendUrl: seriviceFrontURl, Icon: serviceIcon, BackendPath: serivicePath})
 		writeConfig(config)
 		ctx.Redirect("/")
 	}
@@ -249,29 +252,29 @@ func GetIndex(config *Configuration) iris.Handler {
 		auth, _ := session.GetBoolean("authenticated")
 		if (config.Infrastructure != Infrastructure{}) {
 			ctx.ViewData("InfrastructureName", config.Infrastructure.Name)
-			if(isPowerOn(config)){
+			if isPowerOn(config) {
 				ctx.ViewData("Active", "active")
 			}
 		}
 		hostArr := strings.Split(ctx.Host(), ".")
 		host := config.Hosts[0]
-		if (len(hostArr)==3){
+		if len(hostArr) == 3 {
 			host = strings.Join(append(hostArr[:0], hostArr[1:]...), ".")
 		}
 
-
-		ctx.ViewData("Host", host);
+		ctx.ViewData("Host", host)
 		ctx.ViewData("auth", auth)
 		ctx.ViewData("Name", "iris")
 		ctx.ViewData("Services", config.Services)
 		ctx.ViewData("Traefik", config.Traefik)
-		if(config.Traefik){ctx.ViewData("Hosts", config.Hosts[0])}
+		if config.Traefik {
+			ctx.ViewData("Hosts", config.Hosts[0])
+		}
 
 		ctx.Gzip(true)
 		ctx.View("index.html")
 	}
 }
-
 
 func UpateService(config *Configuration) iris.Handler {
 	return func(ctx iris.Context) {
@@ -283,17 +286,19 @@ func UpateService(config *Configuration) iris.Handler {
 		serviceOldName := ctx.PostValue("service-oldname")
 		serviceName := ctx.PostValue("service-name")
 		seriviceURl := ctx.PostValue("service-backend")
+		serivicePath := ctx.PostValue("service-backendpath")
 		seriviceFrontURl := ctx.PostValue("service-frontend")
 		serviceIcon := ctx.PostValue("service-icon")
 
 		for i := range config.Services {
-			attr := &config.Services[i];
-			if (attr.Name == serviceOldName) {
+			attr := &config.Services[i]
+			if attr.Name == serviceOldName {
 				attr.Name = serviceName
 				attr.BackendUrl = seriviceURl
+				attr.BackendPath = serivicePath
 				attr.FrontendUrl = seriviceFrontURl
 				attr.Icon = serviceIcon
-				break;
+				break
 			}
 		}
 		writeConfig(config)
@@ -308,11 +313,11 @@ func DeleteService(config *Configuration) iris.Handler {
 			return
 		}
 		serviceName := ctx.PostValue("serviceName")
-		for i  := range  config.Services {
-			attr := &config.Services[i];
-			if(attr.Name == serviceName){
+		for i := range config.Services {
+			attr := &config.Services[i]
+			if attr.Name == serviceName {
 				config.Services = append(config.Services[:i], config.Services[i+1:]...)
-				break;
+				break
 			}
 		}
 		writeConfig(config)
@@ -332,7 +337,7 @@ func powerOFF(config *Configuration) iris.Handler {
 		req, err := http.NewRequest("GET", config.Infrastructure.PDUURL+"/SetPower.cgi?p1=0+p2=0+p3=0+p4=0", nil)
 		req.SetBasicAuth(username, passwd)
 		resp, err := client.Do(req)
-		if err != nil{
+		if err != nil {
 			log.Print(err)
 		}
 		_, err = ioutil.ReadAll(resp.Body)
@@ -352,7 +357,7 @@ func powerOn(config *Configuration) iris.Handler {
 		req, err := http.NewRequest("GET", config.Infrastructure.PDUURL+"/SetPower.cgi?p1=0+p2=1+p3=1+p4=0", nil)
 		req.SetBasicAuth(username, passwd)
 		resp, err := client.Do(req)
-		if err != nil{
+		if err != nil {
 			log.Print(err)
 		}
 		_, err = ioutil.ReadAll(resp.Body)
@@ -360,62 +365,61 @@ func powerOn(config *Configuration) iris.Handler {
 	}
 }
 
-
 func checkURL(url string) bool {
 	client := &http.Client{
-		Timeout:time.Duration(time.Second),
+		Timeout: time.Duration(time.Second),
 	}
 	req, err := http.NewRequest("GET", url, nil)
 	resp, err := client.Do(req)
-	if err != nil{
+	if err != nil {
 		//log.Fatal(err)
-		return false;
+		return false
 	}
 	_, err = ioutil.ReadAll(resp.Body)
-	return true;
+	return true
 }
 
 func isPowerOn(config *Configuration) bool {
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", config.Infrastructure.PDUURL+"/GetPower.cgi", nil)
 	resp, err := client.Do(req)
-	if err != nil{
+	if err != nil {
 		log.Print(err)
 	}
 	bodyText, err := ioutil.ReadAll(resp.Body)
 
 	r := regexp.MustCompile(`Power Control = (.+)?;<p>`)
-	res := r.FindStringSubmatch(string(bodyText));
-	if(len(res) >= 2) {
+	res := r.FindStringSubmatch(string(bodyText))
+	if len(res) >= 2 {
 		split := strings.Split(res[1], ",")
 		for _, v := range split {
 			if v == "P2:1" {
-				return true;
+				return true
 			} else if v == "P3:1" {
-				return true;
+				return true
 			}
 		}
 	}
-	return false;
+	return false
 }
-
 
 func main() {
 	config, err := getConfig()
-	if(err != nil){
+	if err != nil {
 		println(err.Error())
-		return;
+		return
 	}
-	if(config.Traefik){writeTraefik(&config);}
-
+	if config.Traefik {
+		writeTraefik(&config)
+	}
 
 	go func(conf *Configuration) {
 		for {
 			select {
-			case <- ticker.C:
-				for i  := range  conf.Services {
-					if(i < len(conf.Services)) {
-						attr := &conf.Services[i];
+			case <-ticker.C:
+				for i := range conf.Services {
+					if i < len(conf.Services) {
+						attr := &conf.Services[i]
 						if checkURL(attr.BackendUrl) {
 							attr.Status = "online"
 						} else {
@@ -423,14 +427,12 @@ func main() {
 						}
 					}
 				}
-			case <- quit:
+			case <-quit:
 				ticker.Stop()
 				return
 			}
 		}
 	}(&config)
-
-
 
 	app := iris.New()
 	app.Logger().SetLevel("debug")
@@ -440,21 +442,13 @@ func main() {
 	app.RegisterView(iris.HTML("./templates", ".html"))
 	app.StaticWeb("/static", "./static")
 
-
-
-
-
-
-
 	app.Get("/", GetIndex(&config))
 	app.Get("/turnOFF", powerOFF(&config))
 	app.Get("/turnOn", powerOn(&config))
 
-
 	app.Post("/add-service", AddService(&config))
 	app.Post("/update-service", UpateService(&config))
 	app.Post("/delete-service", DeleteService(&config))
-
 
 	app.Get("/logout", func(ctx iris.Context) {
 		session := sess.Start(ctx)
@@ -473,17 +467,14 @@ func main() {
 		user := ctx.PostValue("username")
 		password := ctx.PostValue("password")
 
-		if(user == config.Username && password == config.Password ){
+		if user == config.Username && password == config.Password {
 			session := sess.Start(ctx)
 			session.Set("authenticated", true)
 			ctx.Redirect("/")
-		}else{
+		} else {
 			ctx.ViewData("Error", "wrong username or password")
 			ctx.View("login.html")
 		}
 	})
 	app.Run(iris.Addr(config.Host+":"+strconv.Itoa(config.Port)), iris.WithoutServerError(iris.ErrServerClosed))
 }
-
-
-
