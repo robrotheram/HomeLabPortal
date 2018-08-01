@@ -208,9 +208,9 @@ func writeTraefik(config *Configuration) {
 				routes := make(map[string]Route)
 				log.Println("Backgorund: " + attr.BackendPath)
 				if attr.BackendPath != "" {
-					routes[attr.Name] = Route{Rule: "Host:" + attr.FrontendUrl + "." + host + ";AddPrefix:/" + attr.BackendPath}
+					routes[attr.Name] = Route{Rule: "Host:" + attr.Name + "." + host + ";AddPrefix:/" + attr.BackendPath}
 				} else {
-					routes[attr.Name] = Route{Rule: "Host:" + attr.FrontendUrl + "." + host}
+					routes[attr.Name] = Route{Rule: "Host:" + attr.Name + "." + host}
 				}
 
 				front := Frontend{Backend: attr.Name, Routes: routes, PassHostHeader: true}

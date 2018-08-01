@@ -49,14 +49,14 @@
     <h3> Services </h3>
     <div class="row" style="padding-top: 10px">
         {{range .Services}}
-        <div class="col-md-4">
-            <div class="card mb-4 box-shadow">
+        <div class="col-md-3">
+            <div class="card mb-3 box-shadow">
 
                     <div class="card-body">
                         {{if $.Traefik}}
-                            <a href="http://{{.FrontendUrl}}.{{$.Host}}" class="noDecoration">
+                            <a href="http://{{.Name}}.{{$.Host}}/{{.FrontendUrl}}" class="noDecoration">
                         {{else}}
-                            <a href="http://{{.FrontendUrl}}" class="noDecoration">
+                            <a href="http://{{.Name}}/{{.FrontendUrl}}" class="noDecoration">
                         {{end}}
                         <table width="100%  ">
                             <tr>
@@ -164,7 +164,7 @@
                     </div>
                 {{end}}
                 <div class="form-group">
-                    <label for="service-frontendurl" class="col-form-label">Frontend Url:</label>
+                    <label for="service-frontendurl" class="col-form-label">Frontend Path:</label>
                     <input type="text" class="form-control" id="service-frontend"name="service-frontend">
                 </div>
                 <div class="form-group">
