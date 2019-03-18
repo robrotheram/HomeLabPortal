@@ -1,24 +1,10 @@
 {
   "Host": "127.0.0.1",
-  "Port": 8080,
+  "Port": 3000,
   "Username":"admin",
   "Password":"password",
   "Traefik": true,
-  //Optional Infrustrucure and link to Avisys IP Power Switch
-  "Infrastructure":{
-    "Name":"Switch",
-    "PDUURL":"http://127.0.0.1"
-  },
   "Hosts":[
     "example.com"
-  ],
-  "Services": [
-    {
-      "Name": "",
-      "BackendUrl": "",
-      "FrontendUrl": "",
-      "Icon": "",
-      "Status": ""
-    }
   ]
 }

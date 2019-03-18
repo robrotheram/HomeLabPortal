@@ -30,15 +30,15 @@
             </ul>
             <form class="form-inline my-2 my-md-0">
 
-            {{if .auth}}
-                <button type="button" class="btn btn-outline-light" style="margin-right: 10px; " data-toggle="modal" data-target="#addService">
-                    Add Service
-                </button>
+                {{if .auth}}
+                    <button type="button" class="btn btn-outline-light" style="margin-right: 10px; " data-toggle="modal" data-target="#addService">
+                        Add Service
+                    </button>
 
-                <a class="btn btn-outline-light" style="margin: auto" href="logout">Logout </a>
-            {{else}}
-                <a class="btn btn-outline-light" style="margin: auto" href="login">Login </a>
-            {{end}}
+                    <a class="btn btn-outline-light" style="margin: auto" href="logout">Logout </a>
+                {{else}}
+                    <a class="btn btn-outline-light" style="margin: auto" href="login">Login </a>
+                {{end}}
             </form>
         </div>
     </div>
@@ -49,137 +49,143 @@
     <h3> Services </h3>
     <div class="row" style="padding-top: 10px">
         {{range .Services}}
-        <div class="col-md-3">
-            <div class="card mb-3 box-shadow">
+            {{if (or (not .Admin) ($.auth))}}
 
-                    <div class="card-body">
-                        {{if $.Traefik}}
+                <div class="col-md-3">
+                    <div class="card mb-3 box-shadow">
+
+                        <div class="card-body">
+                            {{if $.Traefik}}
                             <a href="http://{{.Name}}.{{$.Host}}/{{.FrontendUrl}}" class="noDecoration">
-                        {{else}}
-                            <a href="http://{{.Name}}/{{.FrontendUrl}}" class="noDecoration">
-                        {{end}}
-                        <table width="100%  ">
-                            <tr>
-                                <td>
-                                    <div class="box">
-                                        <img class="img rounded-circle img-thumbnail" style="padding: 10px; width: 80px; height: 80px; object-fit: contain;" src="{{.Icon}}"/>
-                                        <span class="bet_time indicator status-{{.Status}}"></span>
-                                    </div>
+                                {{else}}
+                                <a href="http://{{.Name}}/{{.FrontendUrl}}" class="noDecoration">
+                                    {{end}}
+                                    <table width="100%  ">
+                                        <tr>
+                                            <td>
+                                                <div class="box">
+                                                    <img class="img rounded-circle img-thumbnail" style="padding: 10px; width: 80px; height: 80px; object-fit: contain;" src="{{.Icon}}"/>
+                                                    <span class="bet_time indicator status-{{.Status}}"></span>
+                                                </div>
 
-                                </td>
-                                <td>
-                                    <h3>{{.Name}}</h3>
-                            </tr>
-                        </table>
-                        </a>
-                    {{if $.auth}}
-                        <button type="button" class="btn btn-outline-dark"
-                                style="position:absolute; bottom:10px; right:40px; padding: 0px!important; width: 25px; height: 25px"
-                                data-toggle="modal"
-                                data-service-name="{{.Name}}"
-                                data-service-backend="{{.BackendUrl}}"
-                                data-service-backendpath="{{.BackendPath}}"
-                                data-service-frontend="{{.FrontendUrl}}"
-                                data-service-icon="{{.Icon}}"
-                                data-target="#addService">
-                            <img src="../static/icons/edit.svg" width="15px" height="15px"/>
-                        </button>
-                        <button type="button" class="btn btn-outline-danger"
-                                onclick="deleteService('{{.Name}}')"
-                                style="position:absolute; bottom:10px; right:10px; padding: 0px!important; width: 25px; height: 25px">
-                            <img src="../static/icons/delete.svg" width="15px" height="15px"/>
-                        </button>
-                     {{end}}
-                     </div>
-            </div>
-        </div>
+                                            </td>
+                                            <td>
+                                                <h3>{{.Name}}</h3>
+                                        </tr>
+                                    </table>
+                                </a>
+                                {{if $.auth}}
+                                    <button type="button" class="btn btn-outline-dark"
+                                            style="position:absolute; bottom:10px; right:40px; padding: 0px!important; width: 25px; height: 25px"
+                                            data-toggle="modal"
+                                            data-service-name="{{.Name}}"
+                                            data-service-backend="{{.BackendUrl}}"
+                                            data-service-frontend="{{.FrontendUrl}}"
+                                            data-service-icon="{{.Icon}}"
+                                            data-service-admin="{{.Admin}}"
+                                            data-target="#addService">
+                                        <img src="../static/icons/edit.svg" width="15px" height="15px"/>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger"
+                                            onclick="deleteService('{{.Name}}')"
+                                            style="position:absolute; bottom:10px; right:10px; padding: 0px!important; width: 25px; height: 25px">
+                                        <img src="../static/icons/delete.svg" width="15px" height="15px"/>
+                                    </button>
+                                {{end}}
+                        </div>
+                    </div>
+                </div>
+            {{end}}
         {{end}}
     </div>
 
     <hr/>
 
-{{if .InfrastructureName}}
-    <h3> Infrustructure </h3>
-    <div class="row" style="padding-top: 10px">
-        <div class="col-md-12">
-            <div class="card mb-4 box-shadow">
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-sm-1" style="text-align: center">
-                            <img height="50px" width="50px" src="../static/icons/server.svg"/>
-                        </div>
-                        <div class="col-sm-8" style="padding-left: 25px; line-height: 20px; text-align: center">
-                            <span style="vertical-align: center; display: inline-block; padding: 7px "> <h3 style="margin: 0px;">{{.InfrastructureName}}</h3></span>
-                        </div>
-                        <div class="col-sm-3" style=" text-align: center">
-                        {{if .auth}}
-                            <button id="powerbutton" type="button" class="btn btn-toggle {{.Active}}" style="margin-top: 14px;"data-toggle="button" aria-pressed="true" onclick="switchPower() " autocomplete="off">
-                                <div class="handle"></div>
-                            </button>
-                        {{else}}
-                        {{if .Active}}
-                            <div class="alert alert-success" style="margin: 0px">Powered ON</div>
-                        {{else}}
-                            <div class="alert alert-danger" style="margin: 0px">Powered OFF</div>
-                        {{end}}
-                        {{end}}
-                        </div>
+    {{if .InfrastructureName}}
+        <h3> Infrustructure </h3>
+        <div class="row" style="padding-top: 10px">
+            <div class="col-md-12">
+                <div class="card mb-4 box-shadow">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-sm-1" style="text-align: center">
+                                <img height="50px" width="50px" src="../static/icons/server.svg"/>
+                            </div>
+                            <div class="col-sm-8" style="padding-left: 25px; line-height: 20px; text-align: center">
+                                <span style="vertical-align: center; display: inline-block; padding: 7px "> <h3 style="margin: 0px;">{{.InfrastructureName}}</h3></span>
+                            </div>
+                            <div class="col-sm-3" style=" text-align: center">
+                                {{if .auth}}
+                                    <button id="powerbutton" type="button" class="btn btn-toggle {{.Active}}" style="margin-top: 14px;"data-toggle="button" aria-pressed="true" onclick="switchPower() " autocomplete="off">
+                                        <div class="handle"></div>
+                                    </button>
+                                {{else}}
+                                    {{if .Active}}
+                                        <div class="alert alert-success" style="margin: 0px">Powered ON</div>
+                                    {{else}}
+                                        <div class="alert alert-danger" style="margin: 0px">Powered OFF</div>
+                                    {{end}}
+                                {{end}}
+                            </div>
 
 
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-{{end}}
+    {{end}}
 </div>
 
 </div>
 
 {{if .auth}}
-<div class="modal fade" id="addService" tabindex="-1" role="dialog" aria-labelledby="addService" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">New Service</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <form action="add-service" method="post">
-            <div class="modal-body">
-                <input type="hidden" class="form-control" id="service-oldname" name="service-oldname"/>
-                <div class="form-group">
-                    <label for="service-name" class="col-form-label">Service Name:</label>
-                    <input type="text" class="form-control" id="service-name" name="service-name">
+    <div class="modal fade" id="addService" tabindex="-1" role="dialog" aria-labelledby="addService" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">New Service</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
-                {{if .Traefik}}
-                    <div class="form-group">
-                        <label for="service-backendurl" class="col-form-label">Backend Url:</label>
-                        <input type="text" class="form-control" id="service-backend" name="service-backend">
+                <form action="add-service" method="post">
+                    <div class="modal-body">
+                        <input type="hidden" class="form-control" id="service-oldname" name="service-oldname"/>
+                        <div class="form-group">
+                            <label for="service-name" class="col-form-label">Service Name:</label>
+                            <input type="text" class="form-control" id="service-name" name="service-name">
+                        </div>
+                        {{if .Traefik}}
+                            <div class="form-group">
+                                <label for="service-backendurl" class="col-form-label">Backend Url:</label>
+                                <input type="text" class="form-control" id="service-backend" name="service-backend">
+                            </div>
+                        {{end}}
+                        <div class="form-group">
+                            <label for="service-frontendurl" class="col-form-label">Frontend Path:</label>
+                            <input type="text" class="form-control" id="service-frontend" name="service-frontend">
+                        </div>
+                        <div class="form-group">
+                            <label for="exampleFormControlSelect1">State</label>
+                            <select class="form-control" id="service-admin" name="service-admin">
+                                <option>Public</option>
+                                <option>Private</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="service-iconurl" class="col-form-label">Icon Url:</label>
+                            <input type="text" class="form-control" id="service-icon" name="service-icon">
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="service-backendpath" class="col-form-label">Backend Path:</label>
-                        <input type="text" class="form-control" id="service-backendpath"name="service-backendpath">
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <input id="edit" type="submit" class="btn btn-primary" value="Add Service"/>
                     </div>
-                {{end}}
-                <div class="form-group">
-                    <label for="service-frontendurl" class="col-form-label">Frontend Path:</label>
-                    <input type="text" class="form-control" id="service-frontend"name="service-frontend">
-                </div>
-                <div class="form-group">
-                    <label for="service-iconurl" class="col-form-label">Icon Url:</label>
-                    <input type="text" class="form-control" id="service-icon" name="service-icon">
-                </div>
+                </form>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <input id="edit" type="submit" class="btn btn-primary" value="Add Service"/>
-            </div>
-            </form>
         </div>
     </div>
-</div>
 {{end}}
 
 
@@ -192,7 +198,7 @@
 <script>
     $(function(){
         setTimeout(function () {
-           // location.reload();
+            // location.reload();
         },60000) //1 min
     });
 
@@ -201,18 +207,19 @@
         var button = $(event.relatedTarget); // Button that triggered the modal
         var serviceName = button.data('service-name');
         var serviceBackend = button.data('service-backend');
-        var serviceBackendPath = button.data('service-backendpath');
         var serviceFrontend = button.data('service-frontend');
         var serviceIcon = button.data('service-icon');
+        var serviceAdmin = ((button.data('service-admin')) ? 'Private' : 'Public');
+        console.log(button.data('service-admin'))
         var modal = $(this);
         if(serviceName != undefined){
             modal.find('.modal-title').text('Edit: ' + serviceName);
             modal.find('#service-name').val(serviceName);
             modal.find('#service-oldname').val(serviceName);
             modal.find('#service-backend').val(serviceBackend);
-            modal.find('#service-backendpath').val(serviceBackendPath);
             modal.find('#service-frontend').val(serviceFrontend);
             modal.find('#service-icon').val(serviceIcon);
+            modal.find('#service-admin').val(serviceAdmin);
             modal.find('form').attr('action', "update-service");
             modal.find('#edit').val("Edit Service")
         }else{
@@ -220,9 +227,9 @@
             modal.find('#service-name').val("");
             modal.find('#service-oldname').val("");
             modal.find('#service-backend').val("");
-            modal.find('#service-backendpath').val("");
             modal.find('#service-frontend').val("");
             modal.find('#service-icon').val("");
+            modal.find('#service-admin').val("public");
             modal.find('form').attr('action', "add-service");
             modal.find('#edit').val("Add Service")
         }

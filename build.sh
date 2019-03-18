@@ -6,10 +6,11 @@ rm -r build/*
 cp -r config build/.
 cp -r static build/.
 cp -r templates build/.
+cp Dockerfile build/.
+cp traefik.toml build/.
+cp entrypoint.sh build/.
 
-go build -o build/HomeLabPortal
+CGO_ENABLED=0 GOOS=linux go build -o build/HomeLabPortal -a -ldflags '-extldflags "-static"' .
 env GOOS=linux GOARCH=arm GOARM=5 go build -o build/HomeLabPortal-arm
-
-cp build/HomeLabPortal* .
-
-tar -zcvf HomeLabPortal.tar.gz build
+cd build
+tar -zcvf ../HomeLabPortal.tar.gz *

@@ -4,3 +4,4 @@ traefik_linux-amd64
 config/config.json
 rules.toml
 build
+*.json

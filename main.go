@@ -15,7 +15,6 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/kataras/iris/sessions"
 	"os"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -99,25 +98,20 @@ type Server struct {
 type Service struct {
 	Name        string
 	BackendUrl  string
-	BackendPath string
 	FrontendUrl string
 	Icon        string
+	Admin       bool
 	Status      string
 }
-type Infrastructure struct {
-	Name   string
-	PDUURL string
-	Active bool
-}
+
 type Configuration struct {
-	Host           string
-	Port           int
-	Username       string
-	Password       string
-	Traefik        bool
-	Infrastructure Infrastructure
-	Services       []Service
-	Hosts          []string
+	Host     string
+	Port     int
+	Username string
+	Password string
+	Traefik  bool
+	Services []Service
+	Hosts    []string
 }
 
 var (
@@ -206,15 +200,9 @@ func writeTraefik(config *Configuration) {
 
 			for _, host := range config.Hosts {
 				routes := make(map[string]Route)
-				log.Println("Backgorund: " + attr.BackendPath)
-				if attr.BackendPath != "" {
-					routes[attr.Name] = Route{Rule: "Host:" + attr.Name + "." + host + ";AddPrefix:/" + attr.BackendPath}
-				} else {
-					routes[attr.Name] = Route{Rule: "Host:" + attr.Name + "." + host}
-				}
-
+				routes[attr.Name] = Route{Rule: "Host:" + attr.Name + "." + host}
 				front := Frontend{Backend: attr.Name, Routes: routes, PassHostHeader: true}
-				name := attr.FrontendUrl + "." + host
+				name := attr.Name + "." + host
 				tconfig.Frontends[name] = &front
 			}
 
@@ -240,11 +228,10 @@ func AddService(config *Configuration) iris.Handler {
 		}
 		serviceName := ctx.PostValue("service-name")
 		seriviceURl := ctx.PostValue("service-backend")
-		serivicePath := ctx.PostValue("service-backendpath")
 		seriviceFrontURl := ctx.PostValue("service-frontend")
 		serviceIcon := ctx.PostValue("service-icon")
 
-		config.Services = append(config.Services, Service{Name: serviceName, BackendUrl: seriviceURl, FrontendUrl: seriviceFrontURl, Icon: serviceIcon, BackendPath: serivicePath})
+		config.Services = append(config.Services, Service{Name: serviceName, BackendUrl: seriviceURl, FrontendUrl: seriviceFrontURl, Icon: serviceIcon})
 		writeConfig(config)
 		ctx.Redirect("/")
 	}
@@ -254,12 +241,6 @@ func GetIndex(config *Configuration) iris.Handler {
 	return func(ctx iris.Context) {
 		session := sess.Start(ctx)
 		auth, _ := session.GetBoolean("authenticated")
-		if (config.Infrastructure != Infrastructure{}) {
-			ctx.ViewData("InfrastructureName", config.Infrastructure.Name)
-			if isPowerOn(config) {
-				ctx.ViewData("Active", "active")
-			}
-		}
 		hostArr := strings.Split(ctx.Host(), ".")
 		host := config.Hosts[0]
 		if len(hostArr) == 3 {
@@ -290,7 +271,6 @@ func UpateService(config *Configuration) iris.Handler {
 		serviceOldName := ctx.PostValue("service-oldname")
 		serviceName := ctx.PostValue("service-name")
 		seriviceURl := ctx.PostValue("service-backend")
-		serivicePath := ctx.PostValue("service-backendpath")
 		seriviceFrontURl := ctx.PostValue("service-frontend")
 		serviceIcon := ctx.PostValue("service-icon")
 
@@ -299,7 +279,6 @@ func UpateService(config *Configuration) iris.Handler {
 			if attr.Name == serviceOldName {
 				attr.Name = serviceName
 				attr.BackendUrl = seriviceURl
-				attr.BackendPath = serivicePath
 				attr.FrontendUrl = seriviceFrontURl
 				attr.Icon = serviceIcon
 				break
@@ -329,46 +308,6 @@ func DeleteService(config *Configuration) iris.Handler {
 	}
 }
 
-func powerOFF(config *Configuration) iris.Handler {
-	return func(ctx iris.Context) {
-		if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-			ctx.Redirect("/login")
-			return
-		}
-		var username string = "admin"
-		var passwd string = ""
-		client := &http.Client{}
-		req, err := http.NewRequest("GET", config.Infrastructure.PDUURL+"/SetPower.cgi?p1=0+p2=0+p3=0+p4=0", nil)
-		req.SetBasicAuth(username, passwd)
-		resp, err := client.Do(req)
-		if err != nil {
-			log.Print(err)
-		}
-		_, err = ioutil.ReadAll(resp.Body)
-		ctx.WriteString("{'status':'OFF'}")
-	}
-}
-
-func powerOn(config *Configuration) iris.Handler {
-	return func(ctx iris.Context) {
-		if auth, _ := sess.Start(ctx).GetBoolean("authenticated"); !auth {
-			ctx.Redirect("/login")
-			return
-		}
-		var username string = "admin"
-		var passwd string = ""
-		client := &http.Client{}
-		req, err := http.NewRequest("GET", config.Infrastructure.PDUURL+"/SetPower.cgi?p1=0+p2=1+p3=1+p4=0", nil)
-		req.SetBasicAuth(username, passwd)
-		resp, err := client.Do(req)
-		if err != nil {
-			log.Print(err)
-		}
-		_, err = ioutil.ReadAll(resp.Body)
-		ctx.WriteString("{'status':'ON'}")
-	}
-}
-
 func checkURL(url string) bool {
 	client := &http.Client{
 		Timeout: time.Duration(time.Second),
@@ -381,30 +320,6 @@ func checkURL(url string) bool {
 	}
 	_, err = ioutil.ReadAll(resp.Body)
 	return true
-}
-
-func isPowerOn(config *Configuration) bool {
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", config.Infrastructure.PDUURL+"/GetPower.cgi", nil)
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Print(err)
-	}
-	bodyText, err := ioutil.ReadAll(resp.Body)
-
-	r := regexp.MustCompile(`Power Control = (.+)?;<p>`)
-	res := r.FindStringSubmatch(string(bodyText))
-	if len(res) >= 2 {
-		split := strings.Split(res[1], ",")
-		for _, v := range split {
-			if v == "P2:1" {
-				return true
-			} else if v == "P3:1" {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 func main() {
@@ -447,9 +362,6 @@ func main() {
 	app.StaticWeb("/static", "./static")
 
 	app.Get("/", GetIndex(&config))
-	app.Get("/turnOFF", powerOFF(&config))
-	app.Get("/turnOn", powerOn(&config))
-
 	app.Post("/add-service", AddService(&config))
 	app.Post("/update-service", UpateService(&config))
 	app.Post("/delete-service", DeleteService(&config))

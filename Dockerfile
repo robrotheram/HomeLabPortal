@@ -1,7 +1,7 @@
 FROM alpine:3.6
 RUN mkdir -p /HomeLabPortal
 COPY config /HomeLabPortal/config
-COPY HomeLabPortal-arm /HomeLabPortal/HomeLabPortal
+COPY HomeLabPortal /HomeLabPortal/HomeLabPortal
 COPY static /HomeLabPortal/static
 COPY templates /HomeLabPortal/templates
 COPY traefik.toml /HomeLabPortal/traefik.toml
@@ -16,7 +16,7 @@ RUN set -ex; \
 		*) echo >&2 "error: unsupported architecture: $apkArch"; exit 1 ;; \
 	esac; \
 	apk add --no-cache --virtual .fetch-deps libressl; \
-	wget -O /usr/local/bin/traefik "https://github.com/containous/traefik/releases/download/v1.6.0-rc6/traefik_linux-$arch"; \
+	wget -O /usr/local/bin/traefik "https://github.com/containous/traefik/releases/download/v1.7.9/traefik_linux-$arch"; \
 	apk del .fetch-deps; \
 chmod +x /usr/local/bin/traefik
 
