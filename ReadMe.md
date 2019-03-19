@@ -60,7 +60,7 @@ The ui run on 3000 while the proxy is on port 80 and the treafik dashboard is on
 The portal will create a default route for you called portal so if you configure the dns to point portal.yourhosname.local at the container you will see the ui with no extra configuration
  
  
-##Screenshot of the final result 
+## Screenshot of the final result 
 
 ![screenshot](screenshots/homepage.png)
 
@@ -68,4 +68,3 @@ Edit mode
 
 ![screenshot](screenshots/edit.png)
 
-Down
